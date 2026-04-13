@@ -80,15 +80,16 @@ export default function AmpelPage() {
     if (!stored) { router.push('/'); return }
 
     const parsed = JSON.parse(stored)
-    if (!parsed.sessionId || !parsed.hooperData || !parsed.participantCode) {
+    if (!parsed.hooperData || !parsed.participantCode) {
       router.push('/'); return
     }
 
     const score = parsed.hooperData.hooper_total as number
     setCurrentScore(score)
 
-    // Historische Daten laden (aktuelle Session ausschließen)
-    fetch(`/api/participant?code=${parsed.participantCode}&excludeSessionId=${parsed.sessionId}`)
+    // Historische Daten laden (aktuelle Session ausschließen, falls sessionId vorhanden)
+    const excludeParam = parsed.sessionId ? `&excludeSessionId=${parsed.sessionId}` : ''
+    fetch(`/api/participant?code=${parsed.participantCode}${excludeParam}`)
       .then((r) => r.json())
       .then((data) => {
         const result = calcAmpel(score, data.sessions ?? [])

@@ -76,12 +76,13 @@ export default function HooperPage() {
         }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
         throw new Error(data.error || 'Fehler beim Speichern')
       }
 
-      const { id, hooper_total } = await res.json()
+      const { id, hooper_total } = data
 
       sessionStorage.setItem(
         'turnen_session',

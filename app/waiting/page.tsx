@@ -14,7 +14,7 @@ export default function WaitingPage() {
     const stored = sessionStorage.getItem('turnen_session')
     if (!stored) { router.push('/'); return }
     const parsed = JSON.parse(stored)
-    if (!parsed.sessionId) { router.push('/'); return }
+    if (!parsed.participantCode) { router.push('/'); return }
     setCode(parsed.participantCode)
     setDate(parsed.date)
     setHooperTotal(parsed.hooperData?.hooper_total ?? null)
