@@ -13,29 +13,26 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase()
 
-  // Debug: alle Codes lesen um zu sehen was in der DB ist
-  const { data: allCodes } = await supabase
-    .from('sessions')
-    .select('participant_code')
-
-  let query = supabase
+  // Alle Sessions laden und in JS filtern (Supabase .eq() Filter hat Berechtigungsproblem)
+  const { data: allSessions, error } = await supabase
     .from('sessions')
     .select('*')
-    .eq('participant_code', code)
     .order('date', { ascending: true })
     .order('created_at', { ascending: true })
 
-  if (excludeId) {
-    query = query.neq('id', excludeId)
-  }
-
-  const { data: sessions, error } = await query
-
   if (error) {
-    return NextResponse.json({ error: error.message, _debug: { code, allCodes } }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  if (!sessions || sessions.length === 0) {
+  let sessions = (allSessions ?? []).filter(
+    (s) => s.participant_code === code
+  )
+
+  if (excludeId) {
+    sessions = sessions.filter((s) => s.id !== excludeId)
+  }
+
+  if (sessions.length === 0) {
     return NextResponse.json({
       exists: false,
       count: 0,
@@ -45,17 +42,19 @@ export async function GET(req: NextRequest) {
       avgSessionRpe: null,
       sessions: [],
       rpeEntries: [],
-      _debug: { receivedCode: code, allCodesInDb: allCodes },
     })
   }
 
   const sessionIds = sessions.map((s) => s.id)
 
-  const { data: rpeEntries } = await supabase
+  const { data: allRpe } = await supabase
     .from('rpe_entries')
     .select('*')
-    .in('session_id', sessionIds)
     .order('created_at', { ascending: true })
+
+  const rpeEntries = (allRpe ?? []).filter((r) =>
+    sessionIds.includes(r.session_id)
+  )
 
   const hoopers = sessions.map((s) => s.hooper_total as number)
   const avgHooper = hoopers.reduce((a, b) => a + b, 0) / hoopers.length
@@ -81,6 +80,6 @@ export async function GET(req: NextRequest) {
     stdDevHooper: Math.round(stdDevHooper * 10) / 10,
     avgSessionRpe: avgSessionRpe !== null ? Math.round(avgSessionRpe * 10) / 10 : null,
     sessions,
-    rpeEntries: rpeEntries ?? [],
+    rpeEntries,
   })
 }
