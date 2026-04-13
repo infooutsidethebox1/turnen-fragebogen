@@ -4,11 +4,17 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ProgressBar from './components/ProgressBar'
 
-type CodeStatus = 'idle' | 'checking' | 'returning' | 'new'
+type Phase = 'idle' | 'checking' | 'new' | 'hooper' | 'rpe' | 'done'
 
-type ParticipantSummary = {
-  count: number
-  lastDate: string | null
+type TodaySession = {
+  id: string
+  sleep: number
+  stress: number
+  fatigue: number
+  soreness: number
+  hooper_total: number
+  session_rpe: number | null
+  date: string
 }
 
 export default function StartPage() {
@@ -18,84 +24,99 @@ export default function StartPage() {
   const [code, setCode] = useState('')
   const [date, setDate] = useState(today)
   const [error, setError] = useState('')
-  const [codeStatus, setCodeStatus] = useState<CodeStatus>('idle')
-  const [participantInfo, setParticipantInfo] = useState<ParticipantSummary | null>(null)
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [sessionCount, setSessionCount] = useState(0)
+  const [lastDate, setLastDate] = useState<string | null>(null)
+  const [todaySession, setTodaySession] = useState<TodaySession | null>(null)
   const [visible, setVisible] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    setVisible(true)
-  }, [])
+  useEffect(() => { setVisible(true) }, [])
 
   function handleCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // Nur Ziffern, max 4 Stellen
     const val = e.target.value.replace(/\D/g, '').slice(0, 4)
     setCode(val)
     setError('')
-    setParticipantInfo(null)
+    setPhase('idle')
+    setTodaySession(null)
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     if (val.length === 4) {
-      setCodeStatus('checking')
+      setPhase('checking')
       debounceRef.current = setTimeout(() => checkCode(val), 400)
-    } else {
-      setCodeStatus('idle')
     }
   }
 
   async function checkCode(val: string) {
     try {
       const res = await fetch(`/api/participant?code=${val}`)
-      if (!res.ok) throw new Error()
       const data = await res.json()
-      if (data.exists) {
-        setCodeStatus('returning')
-        setParticipantInfo({ count: data.count, lastDate: data.lastDate })
+
+      if (!data.exists) {
+        setPhase('new')
+        return
+      }
+
+      setSessionCount(data.count)
+      setLastDate(data.lastDate)
+
+      // Prüfen ob heute schon eine Session existiert
+      const sessionToday = (data.sessions as TodaySession[]).find(
+        (s) => s.date === today
+      )
+
+      if (sessionToday) {
+        if (sessionToday.session_rpe !== null) {
+          setPhase('done')       // Heute bereits komplett ausgefüllt
+        } else {
+          setPhase('rpe')        // Hooper heute schon, RPE fehlt noch
+          setTodaySession(sessionToday)
+        }
       } else {
-        setCodeStatus('new')
-        setParticipantInfo(null)
+        setPhase('hooper')       // Zurückkehrender Teilnehmer, Hooper heute noch nicht
       }
     } catch {
-      setCodeStatus('idle')
+      setPhase('idle')
     }
   }
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+  function formatDate(d: string) {
+    return new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
     })
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (code.length !== 4) {
-      setError('Bitte gib deinen 4-stelligen Code ein.')
-      return
-    }
-    if (!date) {
-      setError('Bitte wähle ein Datum.')
-      return
-    }
-    sessionStorage.setItem(
-      'turnen_session',
-      JSON.stringify({ participantCode: code, date })
-    )
+  function goToHooper() {
+    sessionStorage.setItem('turnen_session', JSON.stringify({ participantCode: code, date }))
     router.push('/hooper')
   }
 
+  function goToRpe() {
+    if (!todaySession) return
+    sessionStorage.setItem('turnen_session', JSON.stringify({
+      participantCode: code,
+      date: todaySession.date,
+      sessionId: todaySession.id,
+      hooperData: {
+        sleep: todaySession.sleep,
+        stress: todaySession.stress,
+        fatigue: todaySession.fatigue,
+        soreness: todaySession.soreness,
+        hooper_total: todaySession.hooper_total,
+      },
+      rpeEntries: {},
+    }))
+    router.push('/rpe')
+  }
+
   function goToDashboard() {
-    sessionStorage.setItem(
-      'turnen_session',
-      JSON.stringify({ participantCode: code, date })
-    )
+    sessionStorage.setItem('turnen_session', JSON.stringify({ participantCode: code, date }))
     router.push(`/dashboard?code=${code}`)
   }
 
-  const canSubmit = code.length === 4 && !!date
-  const isReturning = codeStatus === 'returning'
+  const isReturning = phase === 'hooper' || phase === 'rpe' || phase === 'done'
+  const canSubmit = code.length === 4 && !!date && phase !== 'checking'
 
   return (
     <div
@@ -111,13 +132,13 @@ export default function StartPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5 flex-1">
-        {/* Persönlicher Code */}
+      <div className="flex flex-col gap-5 flex-1">
+        {/* Code-Eingabe */}
         <div
           className="rounded-xl p-5 transition-all duration-300"
           style={{
             backgroundColor: 'var(--card)',
-            border: `1px solid ${isReturning ? '#22c55e' : 'var(--border)'}`,
+            border: `1px solid ${phase === 'rpe' ? '#eab308' : isReturning ? '#22c55e' : 'var(--border)'}`,
           }}
         >
           <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
@@ -137,42 +158,57 @@ export default function StartPage() {
               autoCorrect="off"
               spellCheck={false}
             />
-            {codeStatus === 'checking' && (
-              <div
-                className="w-5 h-5 rounded-full border-2 animate-spin shrink-0"
-                style={{ borderColor: 'var(--muted)', borderTopColor: 'transparent' }}
-              />
+            {phase === 'checking' && (
+              <div className="w-5 h-5 rounded-full border-2 animate-spin shrink-0"
+                style={{ borderColor: 'var(--muted)', borderTopColor: 'transparent' }} />
             )}
-            {codeStatus === 'returning' && (
-              <span className="text-xl shrink-0">✅</span>
-            )}
-            {codeStatus === 'new' && (
-              <span className="text-xl shrink-0">👋</span>
-            )}
+            {(phase === 'hooper' || phase === 'done') && <span className="text-xl shrink-0">✅</span>}
+            {phase === 'rpe' && <span className="text-xl shrink-0">⏳</span>}
+            {phase === 'new' && <span className="text-xl shrink-0">👋</span>}
           </div>
 
-          {/* Code-Status Nachricht */}
-          {codeStatus === 'returning' && participantInfo && (
-            <div
-              className="mt-3 rounded-lg px-3 py-2.5 transition-all duration-300"
-              style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}
-            >
+          {/* Status-Nachrichten */}
+          {phase === 'hooper' && (
+            <div className="mt-3 rounded-lg px-3 py-2.5"
+              style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
               <p className="text-sm font-semibold" style={{ color: '#22c55e' }}>
-                Willkommen zurück! Das ist deine {participantInfo.count + 1}. Einheit.
+                Willkommen zurück! Das ist deine {sessionCount + 1}. Einheit.
               </p>
-              {participantInfo.lastDate && (
+              {lastDate && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                  Zuletzt dabei am {formatDate(participantInfo.lastDate)}
+                  Zuletzt dabei am {formatDate(lastDate)}
                 </p>
               )}
             </div>
           )}
 
-          {codeStatus === 'new' && (
-            <div
-              className="mt-3 rounded-lg px-3 py-2.5 transition-all duration-300"
-              style={{ backgroundColor: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.3)' }}
-            >
+          {phase === 'rpe' && todaySession && (
+            <div className="mt-3 rounded-lg px-3 py-2.5"
+              style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
+              <p className="text-sm font-semibold" style={{ color: '#eab308' }}>
+                Hooper bereits ausgefüllt ✓
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                Hooper-Score: {todaySession.hooper_total}/28 · RPE noch ausstehend
+              </p>
+            </div>
+          )}
+
+          {phase === 'done' && (
+            <div className="mt-3 rounded-lg px-3 py-2.5"
+              style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
+              <p className="text-sm font-semibold" style={{ color: '#22c55e' }}>
+                Einheit für heute bereits abgeschlossen ✓
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                Du kannst das Dashboard ansehen oder eine neue Einheit starten.
+              </p>
+            </div>
+          )}
+
+          {phase === 'new' && (
+            <div className="mt-3 rounded-lg px-3 py-2.5"
+              style={{ backgroundColor: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.3)' }}>
               <p className="text-sm font-semibold" style={{ color: '#a78bfa' }}>
                 Erste Einheit — willkommen!
               </p>
@@ -187,58 +223,62 @@ export default function StartPage() {
           </p>
         </div>
 
-        {/* Datum */}
-        <div
-          className="rounded-xl p-5"
-          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
-            DATUM DER TRAININGSEINHEIT
-          </label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => { setDate(e.target.value); setError('') }}
-            className="w-full bg-transparent text-white text-lg outline-none py-1"
-            style={{ colorScheme: 'dark' }}
-          />
-        </div>
-
-        {error && (
-          <p className="text-red-400 text-sm text-center">{error}</p>
+        {/* Datum — nur zeigen wenn Hooper noch nicht ausgefüllt */}
+        {phase !== 'rpe' && phase !== 'done' && (
+          <div className="rounded-xl p-5"
+            style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}>
+            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--muted)' }}>
+              DATUM DER TRAININGSEINHEIT
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => { setDate(e.target.value); setError('') }}
+              className="w-full bg-transparent text-white text-lg outline-none py-1"
+              style={{ colorScheme: 'dark' }}
+            />
+          </div>
         )}
+
+        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
         <div className="flex-1" />
 
-        {/* Dashboard Button (nur für zurückkehrende Teilnehmer) */}
+        {/* Dashboard Button */}
         {isReturning && (
           <button
-            type="button"
             onClick={goToDashboard}
             className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-150"
-            style={{
-              backgroundColor: 'var(--card2)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-            }}
+            style={{ backgroundColor: 'var(--card2)', border: '1px solid var(--border)', color: 'var(--text)' }}
           >
             📊 Mein Dashboard ansehen
           </button>
         )}
 
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="w-full py-4 rounded-xl text-white font-bold text-lg transition-all duration-150"
-          style={{
-            backgroundColor: canSubmit ? 'var(--accent)' : 'var(--card2)',
-            color: canSubmit ? 'white' : 'var(--muted)',
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Weiter zum Hooper-Index →
-        </button>
-      </form>
+        {/* Haupt-Aktion */}
+        {phase === 'rpe' ? (
+          <button
+            onClick={goToRpe}
+            className="w-full py-4 rounded-xl text-white font-bold text-lg transition-all duration-150"
+            style={{ backgroundColor: '#eab308' }}
+          >
+            RPE nach dem Training erfassen →
+          </button>
+        ) : (
+          <button
+            onClick={goToHooper}
+            disabled={!canSubmit}
+            className="w-full py-4 rounded-xl text-white font-bold text-lg transition-all duration-150"
+            style={{
+              backgroundColor: canSubmit ? 'var(--accent)' : 'var(--card2)',
+              color: canSubmit ? 'white' : 'var(--muted)',
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {phase === 'done' ? 'Neue Einheit starten' : 'Weiter zum Hooper-Index →'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

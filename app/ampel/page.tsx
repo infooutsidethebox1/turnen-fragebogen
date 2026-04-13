@@ -103,7 +103,7 @@ export default function AmpelPage() {
   }, [router])
 
   function handleWeiter() {
-    router.push('/rpe')
+    router.push('/waiting')
   }
 
   if (!ampel || currentScore === null) {
@@ -205,10 +205,13 @@ export default function AmpelPage() {
 
       <div
         className="rounded-xl p-4 mb-5"
-        style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+        style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}
       >
-        <p className="text-sm text-center" style={{ color: 'var(--muted)' }}>
-          Fülle nach dem Training die RPE-Bewertung aus.
+        <p className="text-sm font-semibold mb-1" style={{ color: '#eab308' }}>
+          Nach dem Training
+        </p>
+        <p className="text-sm" style={{ color: 'var(--text)' }}>
+          Öffne die App nach dem Training erneut und trage die RPE für jedes Gerät ein.
         </p>
       </div>
 
@@ -217,7 +220,7 @@ export default function AmpelPage() {
         className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all duration-150"
         style={{ backgroundColor: 'var(--accent)' }}
       >
-        Weiter zum Training →
+        Zum Training →
       </button>
     </div>
   )
