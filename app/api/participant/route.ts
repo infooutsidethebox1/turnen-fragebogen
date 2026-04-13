@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
   const excludeId = req.nextUrl.searchParams.get('excludeSessionId')
