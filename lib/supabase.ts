@@ -1,0 +1,39 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+let _supabase: SupabaseClient | null = null
+
+export function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+      throw new Error('Supabase-Umgebungsvariablen fehlen. Bitte .env.local konfigurieren.')
+    }
+    _supabase = createClient(url, key)
+  }
+  return _supabase
+}
+
+// Convenience export — wird nur in Funktionen aufgerufen, nie auf Top-Level
+export { getSupabase as supabase }
+
+export type Database = {
+  sessions: {
+    id: string
+    participant_code: string
+    date: string
+    created_at: string
+    sleep: number
+    stress: number
+    fatigue: number
+    soreness: number
+    hooper_total: number
+  }
+  rpe_entries: {
+    id: string
+    session_id: string
+    apparatus: 'Boden' | 'Ringe' | 'Reck' | 'Barren' | 'Sprung'
+    rpe: number
+    created_at: string
+  }
+}

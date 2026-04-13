@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --card2: #21262d;
+  --border: #30363d;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --text: #e6edf3;
+  --muted: #8b949e;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ensure touch targets are large enough */
+button {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+input {
+  min-height: 44px;
+}
+
+/* Prevent zoom on input focus in iOS */
+input[type='text'],
+input[type='date'],
+select {
+  font-size: 16px !important;
+}
+
+.scale-btn {
+  @apply flex items-center justify-center rounded-lg font-semibold transition-all duration-150 select-none;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.scale-btn:active {
+  transform: scale(0.94);
+}
