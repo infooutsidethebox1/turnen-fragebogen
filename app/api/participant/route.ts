@@ -13,6 +13,11 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase()
 
+  // Debug: alle Codes lesen um zu sehen was in der DB ist
+  const { data: allCodes } = await supabase
+    .from('sessions')
+    .select('participant_code')
+
   let query = supabase
     .from('sessions')
     .select('*')
@@ -27,7 +32,7 @@ export async function GET(req: NextRequest) {
   const { data: sessions, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message, _debug: { code, allCodes } }, { status: 500 })
   }
 
   if (!sessions || sessions.length === 0) {
@@ -40,6 +45,7 @@ export async function GET(req: NextRequest) {
       avgSessionRpe: null,
       sessions: [],
       rpeEntries: [],
+      _debug: { receivedCode: code, allCodesInDb: allCodes },
     })
   }
 
@@ -51,7 +57,6 @@ export async function GET(req: NextRequest) {
     .in('session_id', sessionIds)
     .order('created_at', { ascending: true })
 
-  // Statistiken berechnen
   const hoopers = sessions.map((s) => s.hooper_total as number)
   const avgHooper = hoopers.reduce((a, b) => a + b, 0) / hoopers.length
   const stdDevHooper = Math.sqrt(
