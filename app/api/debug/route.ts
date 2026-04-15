@@ -22,29 +22,24 @@ export async function GET() {
       .from('rpe_entries')
       .select('id, session_id, apparatus, rpe')
 
-    // INSERT Test mit SERVICE ROLE KEY
-    const testCode = `T${Date.now() % 100000000}`
-    const { error: adminInsertError } = await admin
+    // INSERT Test — OHNE löschen, damit wir im SQL Editor prüfen können
+    const testCode = 'PROBE_TEST'
+    await admin.from('sessions').delete().eq('participant_code', testCode) // vorher aufräumen
+    const { error: probeError } = await admin
       .from('sessions')
       .insert({ participant_code: testCode, date: '2099-01-01', sleep: 1, stress: 1, fatigue: 1, soreness: 1 })
-    const { data: adminCheck } = await admin.from('sessions').select('id').eq('participant_code', testCode)
-    await admin.from('sessions').delete().eq('participant_code', testCode)
+    const { data: probeCheck } = await admin.from('sessions').select('id').eq('participant_code', testCode)
 
     return NextResponse.json({
-      url: url?.substring(0, 40) + '...',
+      url: url?.substring(0, 50) + '...',
       sessionsError: sessionsError?.message ?? null,
       rpeError: rpeError?.message ?? null,
       totalSessions: allSessions?.length ?? 0,
       totalRpeEntries: allRpe?.length ?? 0,
-      recentSessions: allSessions?.slice(0, 10).map(s => ({
-        id: s.id?.substring(0, 8),
-        code: s.participant_code,
-        date: s.date,
-        created_at: s.created_at,
-      })),
-      adminInsert: {
-        error: adminInsertError?.message ?? null,
-        worked: (adminCheck?.length ?? 0) > 0,
+      probe: {
+        error: probeError?.message ?? null,
+        inserted: (probeCheck?.length ?? 0) > 0,
+        instruction: 'Jetzt im Supabase SQL Editor prüfen: SELECT * FROM sessions WHERE participant_code = \'PROBE_TEST\';',
       },
     })
   } catch (err) {
