@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,9 +11,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Code fehlt' }, { status: 400 })
   }
 
-  const supabase = getSupabase()
+  const supabase = getSupabaseAdmin()
 
-  // Alle Sessions laden und in JS filtern (Supabase .eq() Filter hat Berechtigungsproblem)
+  // Alle Sessions laden und in JS filtern
   const { data: allSessions, error } = await supabase
     .from('sessions')
     .select('*')

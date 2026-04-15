@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 function checkAuth(req: NextRequest): boolean {
   const password = req.headers.get('x-admin-password')
@@ -12,7 +12,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const supabase = getSupabase()
+    const supabase = getSupabaseAdmin()
     // RPE-Einträge werden durch ON DELETE CASCADE automatisch mitgelöscht
     const { error } = await supabase
       .from('sessions')
