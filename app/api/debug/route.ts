@@ -23,7 +23,7 @@ export async function GET() {
       .select('id, session_id, apparatus, rpe')
 
     // INSERT Test mit SERVICE ROLE KEY
-    const testCode = `TEST_${Date.now()}`
+    const testCode = `T${Date.now() % 100000000}`
     const { error: adminInsertError } = await admin
       .from('sessions')
       .insert({ participant_code: testCode, date: '2099-01-01', sleep: 1, stress: 1, fatigue: 1, soreness: 1 })
