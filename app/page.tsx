@@ -61,20 +61,21 @@ export default function StartPage() {
       setSessionCount(data.count)
       setLastDate(data.lastDate)
 
-      // Prüfen ob heute schon eine Session existiert
+      // Server gibt pendingRpeSession zurück wenn eine Session der letzten 36h noch kein RPE hat
+      if (data.pendingRpeSession) {
+        setPhase('rpe')
+        setTodaySession(data.pendingRpeSession)
+        return
+      }
+
+      // Prüfen ob heute schon eine komplett abgeschlossene Session existiert
       const sessionToday = (data.sessions as TodaySession[]).find(
         (s) => s.date === today
       )
-
-      if (sessionToday) {
-        if (sessionToday.session_rpe !== null) {
-          setPhase('done')       // Heute bereits komplett ausgefüllt
-        } else {
-          setPhase('rpe')        // Hooper heute schon, RPE fehlt noch
-          setTodaySession(sessionToday)
-        }
+      if (sessionToday && sessionToday.session_rpe !== null) {
+        setPhase('done')
       } else {
-        setPhase('hooper')       // Zurückkehrender Teilnehmer, Hooper heute noch nicht
+        setPhase('hooper')
       }
     } catch {
       setPhase('idle')

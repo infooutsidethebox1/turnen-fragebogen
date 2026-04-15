@@ -43,8 +43,19 @@ export async function GET(req: NextRequest) {
       avgSessionRpe: null,
       sessions: [],
       rpeEntries: [],
+      pendingRpeSession: null,
     })
   }
+
+  // Prüfen ob eine Session der letzten 36 Stunden noch keine RPE hat
+  // (server-seitig, unabhängig vom Datum des Clients)
+  const now = Date.now()
+  const pendingRpeSession = sessions
+    .filter((s) => {
+      const isRecent = (now - new Date(s.created_at).getTime()) < 36 * 60 * 60 * 1000
+      return isRecent && (s.session_rpe === null || s.session_rpe === undefined)
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
 
   const sessionIds = sessions.map((s) => s.id)
 
@@ -82,5 +93,6 @@ export async function GET(req: NextRequest) {
     avgSessionRpe: avgSessionRpe !== null ? Math.round(avgSessionRpe * 10) / 10 : null,
     sessions,
     rpeEntries,
+    pendingRpeSession,
   })
 }
