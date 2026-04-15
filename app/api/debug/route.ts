@@ -1,28 +1,26 @@
 import { NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!url || !key) {
-      return NextResponse.json({ error: 'Env vars missing', url: !!url, key: !!key })
-    }
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     const supabase = getSupabase()
+    const supabaseAdmin = getSupabaseAdmin()
 
-    // Test SELECT
+    // SELECT mit anon key
     const { data: selectData, error: selectError } = await supabase
       .from('sessions')
       .select('id, participant_code, date')
       .order('created_at', { ascending: false })
-      .limit(3)
+      .limit(5)
 
-    // Test INSERT mit Testdaten
-    const { error: insertError } = await supabase
+    // INSERT mit service role key (wie die echten API-Routen)
+    const { error: insertError } = await supabaseAdmin
       .from('sessions')
       .insert({
         participant_code: 'TEST',
@@ -33,17 +31,28 @@ export async function GET() {
         soreness: 1,
       })
 
-    // Test-Eintrag löschen falls er erstellt wurde
-    await supabase.from('sessions').delete().eq('participant_code', 'TEST').eq('date', '2099-01-01')
+    // Prüfen ob der TEST-Eintrag wirklich da ist
+    const { data: allAfterInsert } = await supabaseAdmin
+      .from('sessions')
+      .select('id, participant_code')
+      .eq('date', '2099-01-01')
+
+    const testRowExists = (allAfterInsert ?? []).some(
+      (s: { participant_code: string }) => s.participant_code === 'TEST'
+    )
+
+    // Aufräumen
+    await supabaseAdmin.from('sessions').delete().eq('participant_code', 'TEST').eq('date', '2099-01-01')
 
     return NextResponse.json({
-      envOk: true,
+      serviceKeyPresent: !!serviceKey,
+      anonKeyPresent: !!anonKey,
       supabaseUrl: url?.substring(0, 30) + '...',
-      selectError: selectError ? { message: selectError.message, code: (selectError as { code?: string }).code } : null,
-      selectCount: selectData?.length ?? 0,
+      selectError: selectError ? { message: selectError.message } : null,
+      totalSessions: selectData?.length ?? 0,
       recentSessions: selectData?.map(s => ({ id: s.id?.substring(0, 8), code: s.participant_code, date: s.date })),
       insertError: insertError ? { message: insertError.message, code: (insertError as { code?: string }).code } : null,
-      insertSuccess: !insertError,
+      insertActuallyWorked: testRowExists,  // true = Daten wirklich in DB geschrieben
     })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
