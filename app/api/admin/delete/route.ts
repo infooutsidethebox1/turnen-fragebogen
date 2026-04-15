@@ -19,21 +19,25 @@ export async function DELETE(req: NextRequest) {
     )
 
     // RPE-Einträge zuerst löschen, dann Sessions
-    const { error: rpeError } = await supabase
+    const { data: deletedRpe, error: rpeError, count: rpeCount } = await supabase
       .from('rpe_entries')
-      .delete()
+      .delete({ count: 'exact' })
       .neq('id', '00000000-0000-0000-0000-000000000000')
+      .select('id')
 
-    if (rpeError) throw rpeError
-
-    const { error: sessionsError } = await supabase
+    const { data: deletedSessions, error: sessionsError, count: sessionCount } = await supabase
       .from('sessions')
-      .delete()
+      .delete({ count: 'exact' })
       .neq('id', '00000000-0000-0000-0000-000000000000')
+      .select('id')
 
-    if (sessionsError) throw sessionsError
-
-    return NextResponse.json({ success: true, message: 'Alle Daten wurden gelöscht.' })
+    return NextResponse.json({
+      success: !rpeError && !sessionsError,
+      rpeError: rpeError?.message ?? null,
+      sessionsError: sessionsError?.message ?? null,
+      rpeDeleted: rpeCount ?? deletedRpe?.length ?? 0,
+      sessionsDeleted: sessionCount ?? deletedSessions?.length ?? 0,
+    })
   } catch (err) {
     console.error('Delete error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
