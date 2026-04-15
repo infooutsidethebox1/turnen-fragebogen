@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Fehlende Pflichtfelder' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
+    const supabase = getSupabaseAdmin()
 
     // Hooper-Total in JS berechnen (DB hat generated column, aber wir verlassen uns nicht auf SELECT nach INSERT)
     const hooper_total = (sleep as number) + (stress as number) + (fatigue as number) + (soreness as number)

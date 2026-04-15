@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export async function PATCH(
   req: NextRequest,
@@ -21,7 +21,7 @@ export async function PATCH(
       )
     }
 
-    const supabase = getSupabase()
+    const supabase = getSupabaseAdmin()
     const { error } = await supabase
       .from('sessions')
       .update({ session_rpe })
