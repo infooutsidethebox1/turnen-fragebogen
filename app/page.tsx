@@ -49,6 +49,34 @@ export default function StartPage() {
   }
 
   async function checkCode(val: string) {
+    // Zuerst localStorage prüfen: Hat dieser Code eine ausstehende RPE-Session?
+    try {
+      const stored = sessionStorage.getItem('turnen_session')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (
+          parsed.participantCode === val &&
+          parsed.hooperData &&
+          !parsed.rpeSubmitted
+        ) {
+          // Lokale Session gefunden → RPE noch ausstehend
+          setPhase('rpe')
+          setTodaySession({
+            id: parsed.sessionId ?? null,
+            sleep: parsed.hooperData.sleep,
+            stress: parsed.hooperData.stress,
+            fatigue: parsed.hooperData.fatigue,
+            soreness: parsed.hooperData.soreness,
+            hooper_total: parsed.hooperData.hooper_total,
+            session_rpe: null,
+            date: parsed.date,
+          })
+          return
+        }
+      }
+    } catch { /* sessionStorage nicht verfügbar */ }
+
+    // Fallback: API abfragen
     try {
       const res = await fetch(`/api/participant?code=${val}`)
       const data = await res.json()
@@ -62,11 +90,9 @@ export default function StartPage() {
       setLastDate(data.lastDate)
 
       if (data.pendingRpeSession) {
-        // Hat eine offene Session ohne RPE → RPE erfassen
         setPhase('rpe')
         setTodaySession(data.pendingRpeSession)
       } else {
-        // Alle Sessions haben RPE → neue Einheit starten
         setPhase('hooper')
       }
     } catch {

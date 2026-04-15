@@ -105,7 +105,7 @@ export default function RpePage() {
 
       sessionStorage.setItem(
         'turnen_session',
-        JSON.stringify({ ...stored, rpeEntries: rpeValues, sessionRpe })
+        JSON.stringify({ ...stored, rpeEntries: rpeValues, sessionRpe, rpeSubmitted: true })
       )
 
       router.push('/done')
