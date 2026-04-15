@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import ProgressBar from '../components/ProgressBar'
 
 type HooperKey = 'sleep' | 'stress' | 'fatigue' | 'soreness'
@@ -65,30 +64,26 @@ export default function HooperPage() {
     try {
       const stored = JSON.parse(sessionStorage.getItem('turnen_session') || '{}')
 
-      // Direkt in Supabase speichern (kein API-Umweg)
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-
-      const { data, error } = await supabase
-        .from('sessions')
-        .insert({
-          participant_code: stored.participantCode,
+      // Session über API speichern (Service Role Key server-seitig)
+      const res = await fetch('/api/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantCode: stored.participantCode,
           date: stored.date,
           sleep: values.sleep,
           stress: values.stress,
           fatigue: values.fatigue,
           soreness: values.soreness,
-        })
-        .select('id, hooper_total')
-        .single()
+        }),
+      })
 
-      if (error || !data) {
-        throw new Error(`Supabase Fehler: ${error?.message ?? 'Kein Ergebnis'} | Code: ${error?.code}`)
-      }
-
-      const { id, hooper_total } = data
+      const resData = await res.json()
+      const id = res.ok ? resData.id : null
+      const hooper_total = res.ok ? resData.hooper_total : (
+        (values.sleep ?? 0) + (values.stress ?? 0) + (values.fatigue ?? 0) + (values.soreness ?? 0)
+      )
+      // Fehler nicht blockierend — sessionStorage-Flow funktioniert auch ohne DB-ID
 
       sessionStorage.setItem(
         'turnen_session',
