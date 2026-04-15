@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
+  const supabase = createClient(url, serviceKey, {
+    auth: { persistSession: false },
+    global: { fetch: (u: RequestInfo | URL, init?: RequestInit) => fetch(u, { ...init, cache: 'no-store' }) },
+  })
 
   const { data: allSessions, error } = await supabase
     .from('sessions')
