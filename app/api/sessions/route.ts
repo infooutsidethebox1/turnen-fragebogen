@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) {
-    return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY fehlt' }, { status: 500 })
+
+  if (!url || !serviceKey) {
+    return NextResponse.json({ error: 'Supabase env vars fehlen' }, { status: 500 })
   }
 
   try {
@@ -17,7 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Fehlende Pflichtfelder' }, { status: 400 })
     }
 
-    const supabase = getSupabaseAdmin()
+    // Frischer Client (kein Singleton) — gleiche Methode wie der funktionierende test-insert
+    const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
 
     const { data, error } = await supabase
       .from('sessions')

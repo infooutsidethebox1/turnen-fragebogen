@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Code fehlt' }, { status: 400 })
   }
 
-  const supabase = getSupabaseAdmin()
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
 
-  // Alle Sessions laden und in JS filtern
   const { data: allSessions, error } = await supabase
     .from('sessions')
     .select('*')
