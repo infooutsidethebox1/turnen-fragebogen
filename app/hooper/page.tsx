@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import ProgressBar from '../components/ProgressBar'
 
 type HooperKey = 'sleep' | 'stress' | 'fatigue' | 'soreness'
@@ -63,30 +64,31 @@ export default function HooperPage() {
 
     try {
       const stored = JSON.parse(sessionStorage.getItem('turnen_session') || '{}')
-      const res = await fetch('/api/save-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          participantCode: stored.participantCode,
+
+      // Direkt in Supabase speichern (kein API-Umweg)
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          participant_code: stored.participantCode,
           date: stored.date,
           sleep: values.sleep,
           stress: values.stress,
           fatigue: values.fatigue,
           soreness: values.soreness,
-        }),
-      })
+        })
+        .select('id, hooper_total')
+        .single()
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(`API Fehler: ${data.error || res.status}`)
+      if (error || !data) {
+        throw new Error(`Supabase Fehler: ${error?.message ?? 'Kein Ergebnis'} | Code: ${error?.code}`)
       }
 
       const { id, hooper_total } = data
-
-      if (!id) {
-        throw new Error(`Kein ID zurück: ${JSON.stringify(data)} | Code: ${stored.participantCode} | Datum: ${stored.date}`)
-      }
 
       sessionStorage.setItem(
         'turnen_session',
