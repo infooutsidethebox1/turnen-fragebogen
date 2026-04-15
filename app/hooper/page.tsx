@@ -63,7 +63,7 @@ export default function HooperPage() {
 
     try {
       const stored = JSON.parse(sessionStorage.getItem('turnen_session') || '{}')
-      const res = await fetch('/api/sessions', {
+      const res = await fetch('/api/save-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
