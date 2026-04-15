@@ -61,20 +61,12 @@ export default function StartPage() {
       setSessionCount(data.count)
       setLastDate(data.lastDate)
 
-      // Server gibt pendingRpeSession zurück wenn eine Session der letzten 36h noch kein RPE hat
       if (data.pendingRpeSession) {
+        // Hat eine offene Session ohne RPE → RPE erfassen
         setPhase('rpe')
         setTodaySession(data.pendingRpeSession)
-        return
-      }
-
-      // Prüfen ob heute schon eine komplett abgeschlossene Session existiert
-      const sessionToday = (data.sessions as TodaySession[]).find(
-        (s) => s.date === today
-      )
-      if (sessionToday && sessionToday.session_rpe !== null) {
-        setPhase('done')
       } else {
+        // Alle Sessions haben RPE → neue Einheit starten
         setPhase('hooper')
       }
     } catch {
