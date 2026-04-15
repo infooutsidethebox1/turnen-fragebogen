@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+export const dynamic = 'force-dynamic'
 
 function checkAuth(req: NextRequest): boolean {
   const password = req.headers.get('x-admin-password')
@@ -12,7 +14,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabase = getSupabaseAdmin()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
 
     const { data: sessions, error: sessionsError } = await supabase
       .from('sessions')
