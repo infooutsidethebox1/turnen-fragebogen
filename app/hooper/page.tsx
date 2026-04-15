@@ -79,10 +79,14 @@ export default function HooperPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Fehler beim Speichern')
+        throw new Error(`API Fehler: ${data.error || res.status}`)
       }
 
       const { id, hooper_total } = data
+
+      if (!id) {
+        throw new Error(`Kein ID zurück: ${JSON.stringify(data)} | Code: ${stored.participantCode} | Datum: ${stored.date}`)
+      }
 
       sessionStorage.setItem(
         'turnen_session',
