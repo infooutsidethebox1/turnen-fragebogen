@@ -21,21 +21,19 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin()
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('rpe_entries')
       .upsert(
         { session_id: sessionId, apparatus, rpe },
         { onConflict: 'session_id,apparatus' }
       )
-      .select('id')
-      .single()
 
     if (error) {
       console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ id: data.id })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Unexpected error:', err)
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 })
