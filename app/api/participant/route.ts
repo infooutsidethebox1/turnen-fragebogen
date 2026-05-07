@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const { data: allSessions, error } = await supabase
       .from('sessions')
-      .select('*')
+      .select('id, participant_code, date, created_at, sleep, stress, fatigue, soreness, hooper_total, session_rpe')
       .order('created_at', { ascending: true })
 
     if (error) {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     const { data: allRpe, error: rpeError } = await supabase
       .from('rpe_entries')
-      .select('*')
+      .select('id, session_id, apparatus, rpe, created_at')
       .order('created_at', { ascending: true })
 
     if (rpeError) {
