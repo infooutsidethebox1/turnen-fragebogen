@@ -83,9 +83,9 @@ export default function HooperPage() {
       const hooper_total = res.ok ? resData.hooper_total : (
         (values.sleep ?? 0) + (values.stress ?? 0) + (values.fatigue ?? 0) + (values.soreness ?? 0)
       )
-      // Fehler sichtbar machen für Diagnose (nicht blockierend)
       if (!res.ok) {
-        setError(`DB-Fehler (${res.status}): ${resData.error ?? resData.code ?? 'unbekannt'}`)
+        setError(`Speichern fehlgeschlagen – bitte erneut versuchen.`)
+        return
       }
 
       sessionStorage.setItem(
