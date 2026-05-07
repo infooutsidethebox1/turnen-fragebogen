@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
     const { data: allSessions, error } = await supabase
       .from('sessions')
       .select('*')
-      .order('date', { ascending: true })
       .order('created_at', { ascending: true })
 
     if (error) {
