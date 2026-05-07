@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,11 +14,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
+    const supabase = getSupabaseAdmin()
 
     const { data: sessions, error: sessionsError } = await supabase
       .from('sessions')
@@ -46,8 +42,8 @@ export async function GET(req: NextRequest) {
       sessions: sessions ?? [],
       rpeEntries: rpeEntries ?? [],
     })
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? JSON.stringify(err)
-    return NextResponse.json({ error: msg }, { status: 500 })
+  } catch (err) {
+    console.error('Admin data error:', err)
+    return NextResponse.json({ error: 'Datenbankfehler' }, { status: 500 })
   }
 }
