@@ -47,7 +47,6 @@ export async function GET(req: NextRequest) {
       rpeEntries: rpeEntries ?? [],
     })
   } catch (err) {
-    console.error('Admin data error:', err)
-    return NextResponse.json({ error: 'Datenbankfehler' }, { status: 500 })
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
