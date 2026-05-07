@@ -94,11 +94,6 @@ export async function GET(req: NextRequest) {
       pendingRpeSession,
     })
   } catch (err) {
-    return NextResponse.json({
-      error: String(err),
-      step: 'unhandled',
-      urlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30) ?? 'MISSING',
-      hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    }, { status: 500 })
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
