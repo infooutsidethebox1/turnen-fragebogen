@@ -44,9 +44,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: null, hooper_total })
   }
 
-  const { count } = await supabase.from('sessions').select('id', { count: 'exact', head: true })
-  const jwtRole = (token: string) => {
-    try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).role } catch { return 'err' }
-  }
-  return NextResponse.json({ id: data.id, hooper_total: data.hooper_total, totalAfterInsert: count, url: url?.slice(0, 30), keyRole: jwtRole(serviceKey!) })
+  return NextResponse.json({ id: data.id, hooper_total: data.hooper_total })
 }

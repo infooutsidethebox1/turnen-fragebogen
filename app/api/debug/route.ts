@@ -22,24 +22,11 @@ export async function GET() {
 
     const { count: sessionCount } = await admin
       .from('sessions')
-      .select('id', { count: 'exact', head: false })
-    const rawRes = await fetch(
-      `${url}/rest/v1/sessions?select=id&order=created_at.desc`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Prefer: 'count=exact' } }
-    )
-    const rawSessions = await rawRes.json()
-    const rawCount = rawRes.headers.get('content-range')
+      .select('id', { count: 'exact', head: true })
 
-    const jwtRole = (token: string) => {
-      try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).role } catch { return 'err' }
-    }
     return NextResponse.json({
       totalSessions: sessionCount ?? 0,
-      rawCount,
-      rawTotal: Array.isArray(rawSessions) ? rawSessions.length : rawSessions,
       totalRpeEntries: rpeCount ?? 0,
-      url: url?.slice(0, 30),
-      keyRole: jwtRole(serviceKey),
       recentSessions: sessions?.map(s => ({
         id: s.id?.substring(0, 8),
         code: s.participant_code,
