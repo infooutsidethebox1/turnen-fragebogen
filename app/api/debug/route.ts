@@ -23,9 +23,14 @@ export async function GET() {
       .from('sessions')
       .select('id', { count: 'exact', head: true })
 
+    const jwtRole = (token: string) => {
+      try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).role } catch { return 'err' }
+    }
     return NextResponse.json({
       totalSessions: sessionCount ?? 0,
       totalRpeEntries: rpeCount ?? 0,
+      url: url?.slice(0, 30),
+      keyRole: jwtRole(serviceKey),
       recentSessions: sessions?.map(s => ({
         id: s.id?.substring(0, 8),
         code: s.participant_code,
