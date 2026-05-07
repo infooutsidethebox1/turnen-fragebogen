@@ -44,5 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: null, hooper_total })
   }
 
-  return NextResponse.json({ id: data.id, hooper_total: data.hooper_total })
+  const { count } = await supabase.from('sessions').select('id', { count: 'exact', head: true })
+  return NextResponse.json({ id: data.id, hooper_total: data.hooper_total, totalAfterInsert: count, url: url?.slice(0, 30) })
 }
