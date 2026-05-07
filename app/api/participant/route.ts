@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,24 +12,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Code fehlt' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    const headers = {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
+    const supabase = getSupabaseAdmin()
+
+    const { data: allSessions, error } = await supabase
+      .from('sessions')
+      .select('id, participant_code, date, created_at, sleep, stress, fatigue, soreness, hooper_total, session_rpe')
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const sessionsRes = await fetch(
-      `${supabaseUrl}/rest/v1/sessions?select=id,participant_code,date,created_at,sleep,stress,fatigue,soreness,hooper_total,session_rpe&order=created_at.asc`,
-      { headers }
-    )
-    if (!sessionsRes.ok) {
-      const text = await sessionsRes.text()
-      return NextResponse.json({ error: text, step: 'sessions-http', status: sessionsRes.status }, { status: 500 })
-    }
-    const allSessionsRaw = await sessionsRes.json()
-
-    let sessions = (allSessionsRaw as Record<string, unknown>[]).filter(
+    let sessions = (allSessions ?? []).filter(
       (s) => s.participant_code === code
     )
 
@@ -52,18 +47,17 @@ export async function GET(req: NextRequest) {
 
     const pendingRpeSession = sessions
       .filter((s) => s.session_rpe === null || s.session_rpe === undefined)
-      .sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime())[0] ?? null
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
 
-    const sessionIds = sessions.map((s) => s.id as string)
+    const sessionIds = sessions.map((s) => s.id)
 
-    const rpeRes = await fetch(
-      `${supabaseUrl}/rest/v1/rpe_entries?select=id,session_id,apparatus,rpe,created_at&order=created_at.asc`,
-      { headers }
-    )
-    const allRpeRaw = rpeRes.ok ? await rpeRes.json() : []
+    const { data: allRpe } = await supabase
+      .from('rpe_entries')
+      .select('id, session_id, apparatus, rpe, created_at')
+      .order('created_at', { ascending: true })
 
-    const rpeEntries = (allRpeRaw as Record<string, unknown>[]).filter((r) =>
-      sessionIds.includes(r.session_id as string)
+    const rpeEntries = (allRpe ?? []).filter((r) =>
+      sessionIds.includes(r.session_id)
     )
 
     const hoopers = sessions.map((s) => s.hooper_total as number)
