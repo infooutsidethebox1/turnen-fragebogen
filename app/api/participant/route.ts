@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,9 +12,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Code fehlt' }, { status: 400 })
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
+    const supabase = getSupabaseAdmin()
 
     const { data: allSessions, error } = await supabase
       .from('sessions')
@@ -23,7 +21,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: true })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message, step: 'sessions-query' }, { status: 500 })
     }
 
     let sessions = (allSessions ?? []).filter(
@@ -48,17 +46,20 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Neueste Session ohne RPE (kein Zeitlimit — robuster als Datum-Vergleich)
     const pendingRpeSession = sessions
       .filter((s) => s.session_rpe === null || s.session_rpe === undefined)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
 
     const sessionIds = sessions.map((s) => s.id)
 
-    const { data: allRpe } = await supabase
+    const { data: allRpe, error: rpeError } = await supabase
       .from('rpe_entries')
       .select('*')
       .order('created_at', { ascending: true })
+
+    if (rpeError) {
+      return NextResponse.json({ error: rpeError.message, step: 'rpe-query' }, { status: 500 })
+    }
 
     const rpeEntries = (allRpe ?? []).filter((r) =>
       sessionIds.includes(r.session_id)
