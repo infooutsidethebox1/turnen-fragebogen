@@ -111,9 +111,9 @@ export default function HooperPage() {
       <ProgressBar step={2} />
 
       <div className="mt-8 mb-6">
-        <h1 className="text-2xl font-bold text-white mb-1">Wie fühlst du dich heute?</h1>
+        <h1 className="text-2xl font-bold text-white mb-1">Wie hast du dich vor dem Training gefühlt?</h1>
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
-          Hooper-Index · vor dem Training · Skala 1–7
+          Hooper-Index · Rückblick auf vor dem Training · Skala 1–7
         </p>
       </div>
 

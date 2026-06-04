@@ -198,6 +198,9 @@ export default function StartPage() {
                   Zuletzt dabei am {formatDate(lastDate)}
                 </p>
               )}
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                Füll den Fragebogen nach dem Training aus.
+              </p>
             </div>
           )}
 
@@ -232,7 +235,7 @@ export default function StartPage() {
                 Erste Einheit — willkommen!
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                Verwende diesen Code bei jeder Einheit.
+                Füll den Fragebogen nach dem Training aus. Merke dir deinen Code.
               </p>
             </div>
           )}
@@ -294,7 +297,7 @@ export default function StartPage() {
               cursor: canSubmit ? 'pointer' : 'not-allowed',
             }}
           >
-            {phase === 'done' ? 'Neue Einheit starten' : 'Weiter zum Hooper-Index →'}
+            {phase === 'done' ? 'Neue Einheit erfassen' : 'Training auswerten →'}
           </button>
         )}
       </div>

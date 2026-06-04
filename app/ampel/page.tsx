@@ -19,16 +19,16 @@ const AMPEL_CONFIG = {
     border: '#22c55e',
     circle: '#22c55e',
     emoji: '🟢',
-    title: 'Alles im grünen Bereich',
-    text: 'Gute Voraussetzungen für das heutige Training.',
+    title: 'Guter Ausgangszustand',
+    text: 'Du warst vor dem Training gut erholt und wenig belastet.',
   },
   yellow: {
     bg: 'rgba(234,179,8,0.15)',
     border: '#eab308',
     circle: '#eab308',
     emoji: '🟡',
-    title: 'Leicht erhöhte Belastung',
-    text: 'Achte heute auf dein Körpergefühl und passe die Intensität bei Bedarf an.',
+    title: 'Leicht erhöhte Vorbelastung',
+    text: 'Dein Körper war vor dem Training leicht belastet — über deinem persönlichen Durchschnitt.',
   },
   red: {
     bg: 'rgba(239,68,68,0.15)',
@@ -36,7 +36,7 @@ const AMPEL_CONFIG = {
     circle: '#ef4444',
     emoji: '🔴',
     title: 'Hohe Vorbelastung',
-    text: 'Dein Körper signalisiert erhöhte Belastung — passe die Intensität heute bewusst an.',
+    text: 'Du warst vor dem Training deutlich belastet — deutlich über deinem persönlichen Durchschnitt.',
   },
 }
 
@@ -104,7 +104,7 @@ export default function AmpelPage() {
   }, [router])
 
   function handleWeiter() {
-    router.push('/waiting')
+    router.push('/rpe')
   }
 
   if (!ampel || currentScore === null) {
@@ -128,9 +128,9 @@ export default function AmpelPage() {
       <ProgressBar step={3} />
 
       <div className="mt-8 mb-6">
-        <h1 className="text-2xl font-bold text-white mb-1">Dein Wellness-Check</h1>
+        <h1 className="text-2xl font-bold text-white mb-1">Dein Wellness-Status</h1>
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
-          Basierend auf deinem Hooper-Index von heute
+          Basierend auf deinem Hooper-Index vor dem Training
         </p>
       </div>
 
@@ -204,24 +204,12 @@ export default function AmpelPage() {
 
       <div className="flex-1" />
 
-      <div
-        className="rounded-xl p-4 mb-5"
-        style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}
-      >
-        <p className="text-sm font-semibold mb-1" style={{ color: '#eab308' }}>
-          Nach dem Training
-        </p>
-        <p className="text-sm" style={{ color: 'var(--text)' }}>
-          Öffne die App nach dem Training erneut und trage die RPE für jedes Gerät ein.
-        </p>
-      </div>
-
       <button
         onClick={handleWeiter}
         className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all duration-150"
         style={{ backgroundColor: 'var(--accent)' }}
       >
-        Zum Training →
+        Weiter zur RPE-Bewertung →
       </button>
     </div>
   )
